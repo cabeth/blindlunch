@@ -15,13 +15,13 @@ DATABASE_PATH = Path(os.environ.get("BLIND_LUNCH_DB", BASE_DIR / "blind_lunch.db
 ADMIN_USERNAME = "cakol"
 
 TEST_USERS = [
-    ("anna.mueller", "Anna Müller"),
-    ("benjamin.keller", "Benjamin Keller"),
-    ("carla.rossi", "Carla Rossi"),
-    ("daniel.meier", "Daniel Meier"),
-    ("elena.frei", "Elena Frei"),
-    ("fabian.schmid", "Fabian Schmid"),
-    ("giulia.kunz", "Giulia Kunz"),
+    "anna.mueller",
+    "benjamin.keller",
+    "carla.rossi",
+    "daniel.meier",
+    "elena.frei",
+    "fabian.schmid",
+    "giulia.kunz",
 ]
 
 
@@ -64,9 +64,7 @@ def init_database() -> None:
         con.executescript(
             """
             CREATE TABLE IF NOT EXISTS users (
-                username TEXT PRIMARY KEY,
-                display_name TEXT NOT NULL,
-                is_admin INTEGER NOT NULL DEFAULT 0
+                username TEXT PRIMARY KEY
             );
 
             CREATE TABLE IF NOT EXISTS registrations (
@@ -88,31 +86,34 @@ def init_database() -> None:
             );
             """
         )
+        existing_columns = {
+            row["name"] for row in con.execute("PRAGMA table_info(users)").fetchall()
+        }
+        # Migrate databases created by earlier versions of the prototype.
+        if "display_name" in existing_columns:
+            con.execute("ALTER TABLE users DROP COLUMN display_name")
+        if "is_admin" in existing_columns:
+            con.execute("ALTER TABLE users DROP COLUMN is_admin")
         con.execute(
-            """
-            INSERT INTO users(username, display_name, is_admin) VALUES (?, ?, 1)
-            ON CONFLICT(username) DO UPDATE SET is_admin = 1
-            """,
-            (ADMIN_USERNAME, ADMIN_USERNAME.upper()),
+            "INSERT OR IGNORE INTO users(username) VALUES (?)",
+            (ADMIN_USERNAME,),
         )
         if os.environ.get("BLIND_LUNCH_SEED_TEST_DATA") == "1":
             con.executemany(
-                "INSERT OR IGNORE INTO users(username, display_name) VALUES (?, ?)", TEST_USERS
+                "INSERT OR IGNORE INTO users(username) VALUES (?)",
+                [(username,) for username in TEST_USERS],
             )
             con.executemany(
                 "INSERT OR IGNORE INTO registrations(username) VALUES (?)",
-                [(username,) for username, _ in TEST_USERS[:5]],
+                [(username,) for username in TEST_USERS[:5]],
             )
 
 
 def ensure_user(username: str) -> None:
     with connection() as con:
         con.execute(
-            """
-            INSERT INTO users(username, display_name, is_admin) VALUES (?, ?, ?)
-            ON CONFLICT(username) DO UPDATE SET is_admin = excluded.is_admin
-            """,
-            (username, username.upper(), int(is_admin(username))),
+            "INSERT OR IGNORE INTO users(username) VALUES (?)",
+            (username,),
         )
 
 
@@ -140,11 +141,10 @@ def latest_match(username: str):
         return con.execute(
             """
             SELECT m.round_id, m.group_number, m.is_organizer,
-                   GROUP_CONCAT(u.display_name, '|||') AS member_names
+                   GROUP_CONCAT(peers.username, '|||') AS member_names
             FROM matches m
             JOIN matches peers
               ON peers.round_id = m.round_id AND peers.group_number = m.group_number
-            JOIN users u ON u.username = peers.username
             WHERE m.username = ?
               AND m.round_id = (SELECT MAX(id) FROM lunch_rounds)
             GROUP BY m.round_id, m.group_number, m.is_organizer
@@ -195,7 +195,7 @@ def participant_names() -> list[str]:
         rows = con.execute(
             "SELECT username FROM registrations ORDER BY username COLLATE NOCASE"
         ).fetchall()
-    return [row["username"].upper() for row in rows]
+    return [row["username"] for row in rows]
 
 
 def participant_count_label() -> str:
@@ -211,18 +211,17 @@ def latest_teams() -> tuple[int | None, list[dict]]:
             return None, []
         rows = con.execute(
             """
-            SELECT m.group_number, m.is_organizer, u.username
+            SELECT m.group_number, m.is_organizer, m.username
             FROM matches m
-            JOIN users u ON u.username = m.username
             WHERE m.round_id = ?
-            ORDER BY m.group_number, u.username COLLATE NOCASE
+            ORDER BY m.group_number, m.username COLLATE NOCASE
             """,
             (round_id,),
         ).fetchall()
     teams: dict[int, list[dict]] = {}
     for row in rows:
         teams.setdefault(row["group_number"], []).append(
-            {"username": row["username"].upper(), "is_organizer": bool(row["is_organizer"])}
+            {"username": row["username"], "is_organizer": bool(row["is_organizer"])}
         )
     return int(round_id), [
         {"group_number": number, "members": members}
