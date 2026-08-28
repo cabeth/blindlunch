@@ -280,6 +280,16 @@ def serve_layout():
                         ),
                     ],
                 ),
+                html.Figure(
+                    className="lunch-illustration",
+                    children=[
+                        html.Img(
+                            src="/assets/lunch-date.png",
+                            alt="Ein lachender Käse mit Aktentasche trifft ein lachendes Brot zum Kaffee.",
+                        ),
+                        html.Figcaption("Statistisch gesehen ein gutes Match."),
+                    ],
+                ),
                 html.Section(
                     className="login-card",
                     children=[

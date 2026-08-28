@@ -43,6 +43,25 @@ h3 { margin: 0 0 10px; font-size: 22px; }
 p { line-height: 1.55; }
 .intro { margin: 22px 0 0; color: var(--soft-ink); font-size: 19px; }
 
+.lunch-illustration {
+  position: relative;
+  margin: 0 0 24px;
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--line);
+}
+.lunch-illustration img { display: block; width: 100%; max-height: 430px; object-fit: cover; }
+.lunch-illustration figcaption {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  padding: 10px 14px;
+  color: var(--white);
+  background: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .login-card {
   display: grid;
   grid-template-columns: minmax(240px, 410px) 1fr;
@@ -109,4 +128,5 @@ footer { padding: 28px 40px; color: #777; border-top: 1px solid var(--line); tex
   .login-card, .dashboard-grid { grid-template-columns: 1fr; }
   .login-card { gap: 18px; }
   .action-card, .match-card, .info-card { min-height: 0; }
+  .lunch-illustration figcaption { position: static; display: block; }
 }
