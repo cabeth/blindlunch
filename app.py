@@ -203,6 +203,21 @@ def participant_count_label() -> str:
     return f"{count} {'Person ist' if count == 1 else 'Personen sind'} dabei"
 
 
+def clear_database(*, clear_users: bool = False) -> None:
+    """Clear lunch data in one transaction, optionally removing known users too."""
+    with connection() as con:
+        con.execute("DELETE FROM matches")
+        con.execute("DELETE FROM lunch_rounds")
+        con.execute("DELETE FROM registrations")
+        con.execute("DELETE FROM sqlite_sequence WHERE name = 'lunch_rounds'")
+        if clear_users:
+            con.execute("DELETE FROM users")
+            con.execute(
+                "INSERT INTO users(username) VALUES (?)",
+                (ADMIN_USERNAME,),
+            )
+
+
 def latest_teams() -> tuple[int | None, list[dict]]:
     with connection() as con:
         round_row = con.execute("SELECT MAX(id) AS id FROM lunch_rounds").fetchone()
