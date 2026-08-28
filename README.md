@@ -29,6 +29,16 @@ Testdaten werden nur auf ausdrücklichen Wunsch in eine neue Datenbank geschrieb
 BLIND_LUNCH_SEED_TEST_DATA=1 BLIND_LUNCH_LOCAL_USER=cakol python app.py
 ```
 
+## Datenbank leeren
+
+Die Datenbank kann vollständig zurückgesetzt werden mit:
+
+```bash
+python clear_db.py
+```
+
+Dabei werden Anmeldungen, Auslosungen und bekannte Benutzernamen entfernt. `cakol` bleibt als Admin-Benutzer erhalten. Wenn `BLIND_LUNCH_DB` gesetzt ist, wird dieselbe konfigurierte Datenbank wie in der App verwendet.
+
 ## Posit Connect
 
 Die App stellt `server = app.server` für Posit Connect bereit und liest den Benutzer aus dem Header `RStudio-Connect-Credentials`. `CAKOL` erhält automatisch den Admin-Modus; Groß-/Kleinschreibung spielt keine Rolle.
